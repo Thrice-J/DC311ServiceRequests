@@ -1,0 +1,183 @@
+---
+title: "GOV670 Final Project Memo"
+author: "Jeremy Joy and Danielle Corcoran"
+date: "`r Sys.Date()`"
+output: pdf_document
+bibliography: gentrification.bib
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+## Introduction
+
+The tendency of 311 calls to change in both frequency and nature as neighborhoods gentrify is well-documented, but less is known about whether a city's responsiveness to these calls changes as well. We are interested in studying the relationship between gentrification and resolution time for non-emergency calls in Washington, DC. We would like to know whether resolution times for 311 complaints and service calls vary by census tract, whether that variation correlates with certain socioeconomic indicators, and whether resolution times have improved for census tracts where gentrification has occurred. Whereas most academic studies and journalistic reports on gentrification and 311 calls have examined neighborhood conflict and quality-of-life complaints resulting in cultural displacement and/or police exposure (see, for example, @reza2022, @beck2020, @nyucomm2015, @vo2018, @misra2018, @harris2020, and @laniyonu2018), our project looks at a wider variety of calls, most of which are unlikely to engender a police response, and focuses on whether gentrification has led to a less equitable distribution of city resources.
+
+## Research Questions
+
+-   Do resolution times for specific types of 311 complaints and service calls, such as those related to pothole repair, graffiti, snow removal, sidewalk repair, missed trash collection, parking violations, and rodent treatment vary by census tract?
+
+-   How do resolution times correlate with gentrification-relevant socioeconomic indicators, such as housing costs and educational attainment of residents (specifics TBD)?
+
+-   Have resolution times decreased in census tracts that have experienced gentrification (definition TBD)? Can we detect a causal link between gentrification and improved resolution times?
+
+## Data
+
+-   311 call data from 2009 -- 2011 and 2015 -- October 15, 2022, obtained through Open Data DC.
+    -   Note: Data from 2012 through 2014 exists, but we have not been able to download it due to a website error.\
+    -   Variables of interest may include service code description, resolution time, service order status, priority, agency, date, and location variables.
+    
+-   American Community Survey data from 2009 -- 2021
+    -   Variables of interest may include median home value, median rent, median household income, adults over 25 with a Bachelor's degree, poverty rate, vacancy rate, and demographic variables.
+
+## Methods
+
+We are considering various measures of gentrification. One measure we are studying is the two-test approach used by Governing for its "Gentrification in America Report" in 2015, which involved first determining which census tracts were candidates for gentrification, based on having median household incomes and median home values that were relatively low for the metro area, and then determining which tracts had actually been gentrified, based on experiencing increases in Bachelor's degree attainment and home values that were relatively large [@maciag_2015]. Once we have settled upon a gentrification measure, we plan to use ACS data to classify census tracts as gentrified or not gentrified. We will then combine these classifications with 311 data in order to examine the relationship between gentrification status and resolution time, as well as between changes in gentrification status and changes in resolution time. By comparing changes in resolution times in census tracts that have gentrified to those in census tracts that have not (for the same service code over the same time period), we also hope to infer whether gentrification is responsible for helping to shift priority to more advantaged neighborhoods.
+
+## Preliminary Exploration
+
+For our preliminary analysis, we took a subset of our data, comprising a sample of 100,000 observations from 2015, 2018, and 2021, which we are using to generate hypotheses.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+complaints.sample <- read_csv("DC_311_Sample.csv")
+complaints.sample <- complaints.sample %>%
+  mutate(RESOLUTIONTIME = as.duration(RESOLUTIONTIME))
+glimpse(complaints.sample)
+```
+
+\newpage 
+
+### Initial findings
+
+  - Common 311 call types
+
+```{r echo=FALSE}
+complaints.sample %>% 
+  filter(!ORGANIZATIONACRONYM %in% c("DMV", "OUC")) %>% #We generally are not interested in these service requests
+  count(SERVICECODEDESCRIPTION, sort =TRUE) %>%
+  slice(1:30) %>%
+  mutate(SERVICECODEDESCRIPTION = reorder(SERVICECODEDESCRIPTION, n)) %>%
+  ggplot(aes(x=n, y = fct_reorder(SERVICECODEDESCRIPTION,n), label=n)) + 
+  geom_point(size = 3, color="salmon1") +
+  geom_text(hjust= 1.2, vjust=0.3, size=2.5) +
+  labs(x="Count", y="Top 30 311 Call Types") +
+  ggtitle("Number of 311 Calls by Service Description")
+```
+There are many other call types to examine but this provides an idea of the types of service requests that occur most frequently in the sample. We specifically will be looking to classify the requests that we believe are quality of life related. More than likely a request for bulk collection will be equally required by people residing in most neighborhoods, but we will have to dive deeper to determine this.
+
+\newpage
+
+  - Trends in 10 of the most common service requests (that at first glance we believe may be associated with quality of life). 
+
+```{r echo=FALSE}
+#complaints.sample %>%
+#  group_by(SERVICECODEDESCRIPTION) %>%
+#  count() %>%
+#  arrange(desc(n))
+
+service <- c("Trash Collection - Missed", "Streetlight Repair Investigation",
+             "Pothole", "Illegal Dumping", 
+             "Emergency No-Parking Verification", "Residential Parking Permit Violation",
+             "Abandoned Vehicle - On Public Property", "Rodent Inspection and Treatment",
+             "Alley Cleaning", "Sidewalk Repair", "Graffiti Removal")
+
+complaints.sample %>%
+  filter(SERVICECODEDESCRIPTION %in% service) %>%
+  group_by(SERVICECODEDESCRIPTION, YEAR) %>%
+  count() %>%
+  ggplot(aes(x=YEAR, y=n, color = SERVICECODEDESCRIPTION)) +
+  geom_point(size=3) +
+  geom_line(size=0.7) +
+  scale_x_continuous(breaks = seq(2015,2021,3)) +
+  scale_y_continuous(breaks = seq(0,1600,200)) +
+  labs(x="Year", y = "Number of Service Requests")
+
+```
+
+For example, we can see that there ia a sharp decrease in Emergency No-Parking Verification requests and sharp increases in Illegal Dumping, Abandoned Vehichle and Rodent Inspection and Treatment requests between 2018 and 2021. These are all things we will have to investigate further and see if there are trends involving certain neighborhoods. 
+\newpage
+
+ - Trends in the amount of service requests by ward.
+
+```{r echo=FALSE}
+complaints.sample %>%
+  filter(!WARD == "NA") %>%
+  mutate(WARD = as.character(WARD),
+         YEAR = as.character(YEAR)) %>%
+  ggplot(aes(y= reorder(WARD,WARD,function(x) length(x)), fill = YEAR))+
+  geom_bar(position = position_stack(reverse = T)) +
+  geom_text(stat="count",size=3,color="black",aes(label= after_stat(count)),
+            position = position_stack(vjust=0.5, reverse = T)) +
+  scale_x_continuous(breaks = seq(0,18000,2000)) +
+  labs(y = "Ward", x="Number of Service Requests in Sample", fill = NULL) +
+  theme(legend.position = "top") +
+  ggtitle("Number of Service Requests by Ward")
+```
+
+Since, we haven't dove in and started to examine specific census tracks and their socioeconomic indicators looking at wards broadly may help us get familiar with the data. Here we can see that Ward 2 generates the largest number of service requests in this sample but the number of requests went down steadily between 2015 and 2018 and then again between 2018 and 2021. Conversely, Wards 1, 4, 5, 7 and 8 trended in a different direction with regards to volume of service requests for these years.  
+
+\newpage
+
+ - Trends in response time (checking for heterogeneity – by type of complaint and for now by ward)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+service1 <- c("Abandoned Vehicle - On Public Property", "Snow/Ice Removal",
+             "Dead Animal Collection", "Graffiti Removal", "Illegal Dumping",
+             "Pothole", "Parking Enforcement", "Trash Collection - Missed",
+             "Out of State Parking Violation (ROSA)", "Recycling Collection - Missed")
+
+#complaints.sample %>%
+#  filter(ORGANIZATIONACRONYM %in% c("DDOT", "DPW", "DOH", "DOEE", "Snow")) %>%
+#  filter(!is.na(RESOLUTIONTIME)) %>%
+#  group_by(SERVICECODEDESCRIPTION, YEAR) %>%
+#  summarize(AVGTIME = round((mean(RESOLUTIONTIME)/86400),2)) %>%
+#  arrange(SERVICECODEDESCRIPTION)
+
+complaints.sample %>%
+  filter(SERVICECODEDESCRIPTION %in% service1) %>%
+  filter(!is.na(RESOLUTIONTIME)) %>%
+  group_by(SERVICECODEDESCRIPTION, YEAR) %>%
+  summarize(AVGTIME = round((mean(RESOLUTIONTIME)/86400),2)) %>%
+  ggplot(aes(x=YEAR, y=AVGTIME, color = SERVICECODEDESCRIPTION)) +
+  geom_point(size=3) +
+  geom_line(size=0.7) +
+  scale_x_continuous(breaks = seq(2015,2021,3)) +
+  scale_y_continuous(breaks = seq(0,55,5)) +
+  labs(x="Year", y = "Average Response Time")
+```
+
+Once again, we took a selected group of service requests that we felt would fall under the umbrella of quality of life issues and looked at how the average response time changed over the years in the sample. Here we can see that the response times in general typically fell or remained near the same with the exception of Snow/Ice removal which had a big jump in 2021 from 2018 (possible outliers or input error) and Illegal Dumping service requests which saw slow but steady increase in response times. It is worth noting that the group of service requests selected were selected also on the basis of creating a reasonable visualization. The amount of average time varied immensely depending on the type of service request with requests involving parking usually being resolved within a day or so and other requests like side walk repairs taking months. This means we will probably have to come up with another variable to work with along side resolution time as each individual type of service request has vastly different times of responses. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+complaints.sample %>%
+  filter(!is.na(RESOLUTIONTIME)) %>%
+  filter(!is.na(WARD)) %>%
+  mutate(WARD = as.character(WARD)) %>%
+  group_by(WARD, YEAR) %>%
+  summarize(AVGTIME = round((mean(RESOLUTIONTIME)/86400),2)) %>%
+  ggplot(aes(x=YEAR, y=AVGTIME, color = WARD)) +
+  geom_point(size=3) +
+  geom_line(size=0.7) +
+  scale_x_continuous(breaks = seq(2015,2021,3)) +
+  scale_y_continuous(breaks = seq(0,100,10)) +
+  labs(x="Year", y = "Average Response Time")
+```
+
+Lastly, here we can see that in general the response times to service requests trended downward in all wards from the year 2015 to 2018 and then again in 2021. This isn't shocking as we would assume that cities have gotten better at responding to the majority of issues as shown above and therefore will need to take that into account when conducting our analysis. 
+
+## Next Steps
+
+-   Get 311 data for 2012 -- 2014
+-   Decide upon a definition of gentrification
+-   Analyize all the different service descriptions to determine which ones should be considered quality of life requests.
+-   Attempt to get noise complaint data from the OUC that we can use and study similarly to the 311 service requests
+
+\newpage
+
+## References
