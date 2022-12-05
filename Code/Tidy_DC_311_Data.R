@@ -3,6 +3,9 @@
 library(tidyverse)
 library(lubridate)
 
+#All yearly DC 311 Data.csv can be found on https://opendata.dc.gov/
+
+#Reading in local file (stored on shared google drive)
 complaints.2022 <- read_csv("DC_311_2022.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -37,6 +40,7 @@ complaints.2022 <- complaints.2022 %>%
          PRIORITY, STREETADDRESS, ZIPCODE, LATITUDE, LONGITUDE, 
          MARADDRESSREPOSITORYID, WARD) 
 
+#Reading in local file (stored on shared google drive)
 complaints.2021 <- read_csv("DC_311_2021.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -77,6 +81,7 @@ complaints.2021 <- complaints.2021 %>%
          MARADDRESSREPOSITORYID, WARD) 
          
 
+#Reading in local file (stored on shared google drive)
 complaints.2020 <- read_csv("DC_311_2020.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -118,6 +123,7 @@ complaints.2020 <- complaints.2020 %>%
          PRIORITY, STREETADDRESS, ZIPCODE, LATITUDE, LONGITUDE, 
          MARADDRESSREPOSITORYID, WARD) 
 
+#Reading in local file (stored on shared google drive)
 complaints.2019 <- read_csv("DC_311_2019.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -187,6 +193,7 @@ complaints.2019 <- complaints.2019 %>%
          MARADDRESSREPOSITORYID, WARD)
 
 
+#Reading in local file (stored on shared google drive)
 complaints.2018 <- read_csv("DC_311_2018.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -241,6 +248,7 @@ complaints.2018 <- complaints.2018 %>%
          PRIORITY, STREETADDRESS, ZIPCODE, LATITUDE, LONGITUDE, 
          MARADDRESSREPOSITORYID, WARD)
 
+#Reading in local file (stored on shared google drive)
 complaints.2017 <- read_csv("DC_311_2017.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -290,6 +298,7 @@ complaints.2017 <- complaints.2017 %>%
          PRIORITY, STREETADDRESS, ZIPCODE, LATITUDE, LONGITUDE, 
          MARADDRESSREPOSITORYID, WARD) 
 
+#Reading in local file (stored on shared google drive)
 complaints.2016 <- read_csv("DC_311_2016.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -340,6 +349,7 @@ complaints.2016 <- complaints.2016 %>%
          PRIORITY, STREETADDRESS, ZIPCODE, LATITUDE, LONGITUDE, 
          MARADDRESSREPOSITORYID, WARD)  
 
+#Reading in local file (stored on shared google drive)
 complaints.2015 <- read_csv("DC_311_2015.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -396,7 +406,7 @@ complaints.2015 <- complaints.2015 %>%
          PRIORITY, STREETADDRESS, ZIPCODE, LATITUDE, LONGITUDE, 
          MARADDRESSREPOSITORYID, WARD)
 
-
+#Reading in local file (stored on shared google drive)
 complaints.2014 <- read_csv("DC_311_2014.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -446,6 +456,7 @@ complaints.2014 <- complaints.2014 %>%
          PRIORITY, STREETADDRESS, ZIPCODE, LATITUDE, LONGITUDE, 
          MARADDRESSREPOSITORYID, WARD)
 
+#Reading in local file (stored on shared google drive)
 complaints.2013 <- read_csv("DC_311_2013.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -492,6 +503,7 @@ complaints.2013 <- complaints.2013 %>%
          MARADDRESSREPOSITORYID, WARD)
 
 
+#Reading in local file (stored on shared google drive)
 complaints.2012 <- read_csv("DC_311_2012.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -531,6 +543,7 @@ complaints.2012 <- complaints.2012 %>%
          PRIORITY, STREETADDRESS, ZIPCODE, LATITUDE, LONGITUDE, 
          MARADDRESSREPOSITORYID, WARD)
 
+#Reading in local file (stored on shared google drive)
 complaints.2011 <- read_csv("DC_311_2011.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -561,6 +574,7 @@ complaints.2011 <- complaints.2011 %>%
          MARADDRESSREPOSITORYID, WARD)
 
 
+#Reading in local file (stored on shared google drive)
 complaints.2010 <- read_csv("DC_311_2010.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -591,6 +605,8 @@ complaints.2010 <- complaints.2010 %>%
          PRIORITY, STREETADDRESS, ZIPCODE, LATITUDE, LONGITUDE, 
          MARADDRESSREPOSITORYID, WARD)
 
+
+#Reading in local file (stored on shared google drive)
 complaints.2009 <- read_csv("DC_311_2009.csv")
 
 #Mutating to change and add variables and standardizing some categorical variables
@@ -671,6 +687,8 @@ complaints.sample <- complaints.sample %>%
 complaints <- complaints %>%
   select(-ID)
 
+#writing to local drive (can be found on github)
 write_csv(complaints.sample, "DC_311_Sample.csv")
 
+#writing to local drive (can be found on shared google drive, too big for github)
 write_csv(complaints, "DC_311_2009to2022.csv")

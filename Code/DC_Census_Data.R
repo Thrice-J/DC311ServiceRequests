@@ -7,8 +7,6 @@ library(tidyverse)
 #Setting Scientific Notation
 options(scipen=999)
 
-#data_311 <- read_csv("DC_311_2009to2022.csv")
-
 #Creating vector of census variables
 census_vars <- c(
   Population = "B01001_001",
@@ -52,6 +50,7 @@ map_df(census_data, ~ sum(is.na(.)))
 
 #view(census_data)
 
+#writing to local drive (stored on github)
 write_csv(census_data, "DC_Census_2010to2020.csv")
 
 #Variable Codes of Interest:

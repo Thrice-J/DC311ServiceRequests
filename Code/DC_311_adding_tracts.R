@@ -2,6 +2,7 @@ library(sf)
 library(tidyverse)
 library(janitor)
 
+#Reading in local file (stored on shared Google Drive, too big for github)
 
 DC_311_Data <- read_csv("DC_311_2009to2022.csv")
 
@@ -39,5 +40,6 @@ DC_311_Data_Tracts <- DC_311_Data_Tracts %>%
 #verifying 179 unique tracts + NAs
 unique(DC_311_Data_Tracts$CENSUSTRACT)
 
+#Writing to local filed and uploading to shared google drive (too big for github)
 write_csv(DC_311_Data_Tracts, "DC_311_2010to2019_with_Tracts.csv")
 
