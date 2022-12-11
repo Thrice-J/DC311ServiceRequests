@@ -47,13 +47,13 @@ In order to integrate citations into the References section below, we use the \@
 
 \label{section:data}
 
-This section describes the data we analyze. We describe the source of the data, and its primary features. We describe the methods we use to answer our question and to test our hypotheses.
+This section describes the data we analyze. We describe the source of the data, and its primary features.
 
 If our data were `cars`, loaded in the chunk above, we could note that our data have `r nrow(cars)` observations.
 
 # Methods and Results
 
-Here, we explain and interpret our results. We try to learn as much as we can about our question as possible, given the data and analysis. We present our results clearly. We interpret them for the reader with precision and circumspection. We avoid making claims that are not substantiated by our data.
+Here,  we describe the methods we use to answer our question and to test our hypotheses. We also explain and interpret our results. We try to learn as much as we can about our question as possible, given the data and analysis. We present our results clearly. We interpret them for the reader with precision and circumspection. We avoid making claims that are not substantiated by our data.
 
 
 We can generate our plots with code or We can attach our plots like so: \newline 
