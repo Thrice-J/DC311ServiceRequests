@@ -38,8 +38,6 @@ tracts_2012_2019 <- read_csv("../Data/Census_Data_2012_2019_Eligible_Gentrified.
 
 # Introduction
 
-Jeremy's Change
-
 In this section, we introduce the reader to the phenomenon we investigate. We describe the way in which our analysis contributes to an important intellectual debate, or how it answers a pressing political or social question. We introduce our hypotheses, data, and results. We signpost for the reader what's coming in the rest of the paper.
 
 # Background
