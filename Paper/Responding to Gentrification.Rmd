@@ -32,7 +32,6 @@ library(lubridate)
 calls_2012_2019 <- read_csv("../Data/DC_311_Gentrified_Tracts_2012_2019_only.csv")
 
 tracts_2012_2019 <- read_csv("../Data/Census_Data_2012_2019_Eligible_Gentrified.csv")
-
 ```
 
 # Introduction
@@ -62,6 +61,8 @@ We can generate our plots with code or We can attach our plots like so: \newline
 
 
 ![Caption](../Plots/DC_Map_Eligible.png){align=center, width=400}
+
+![Caption](../Plots/DC_Map_Eligible.png){width=300}![Caption](../Plots/DC_Map_Gentrified.png){width=300}
 
 Note that this section may be integrated into Section \ref{section:data}, if joining the two improves the overall presentation.
 
