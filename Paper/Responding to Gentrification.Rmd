@@ -17,20 +17,22 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 library(knitr)
+library(tidyverse)
+library(MatchIt)
+library(Matching)
+library(tidycensus)
+library(tmap)
+library(tmaptools)
+library(janitor)
+library(lubridate)
 ```
 
 ```{r echo=FALSE, message=FALSE}
-# This chunk might read our data.
-# It might clean the data, create new variables, etc.
-# Now our data are ready for our paper.
-# Because echo=FALSE, this chunk itself is not shown.
-# Because message=FALSE, any R messages from this chunk do not appear in our paper.
-data("cars")
-```
+#reading in our data
+calls_2012_2019 <- read_csv("../Data/DC_311_Gentrified_Tracts_2012_2019_only.csv")
 
-```{r eval=FALSE, echo=FALSE}
-# Because eval=FALSE, this chunk is not run.
-df <- read.csv()
+tracts_2012_2019 <- read_csv("../Data/Census_Data_2012_2019_Eligible_Gentrified.csv")
+
 ```
 
 # Introduction
