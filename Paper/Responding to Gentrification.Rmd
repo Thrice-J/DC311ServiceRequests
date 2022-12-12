@@ -45,17 +45,9 @@ In this section, we introduce the reader to the phenomenon we investigate. We de
 
 # Background
 
+more stuff
+Here is a change. This too is a change
 
-
-write stuff
-
-
-
-
-
-
-
-Here is a change. 
 
 
 Here we go deeper into the intellectual debate, the political and social context of our investigation. To give the reader a clear sense of why we are writing this paper, we describe the relevant scholarly, technical, or popular literature. We cite at least two published, peer-reviewed scholarly works. For example, we could cite @bhavsar2020 like this or like this [@bhavsar2020]. @bhavsar2020 provides a systematic review of defining gentrification for epidemiologic research. We only cite others' work in our paper when it enhances the reader's understanding of what we, the authors of this paper, are doing. We connect everything we cite to *our* investigation; this is our original research, not a book report or an annotated bibliography.
