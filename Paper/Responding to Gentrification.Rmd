@@ -1,13 +1,17 @@
 ---
 title: "Responding to Gentrication?"
-author: 
-  - Danielle Corcoran ^[American University]
-  - Jeremy Joy ^[American University]
+subtitle: "311 Call Resolution Times and Neighborhood Change in Washington, D.C."
+author:
+- Danielle Corcoran ^[American University]
+- Jeremy Joy ^[American University]
 date: "2022-12-14"
-abstract: "This is our informative abstract of fewer than 200 words. It describes what we investigate, how we investigate it, and what we find."
-output: 
+output:
+  word_document: default
   pdf_document:
-    number_sections: true
+    number_sections: yes
+abstract: This is our informative abstract of fewer than 200 words. It describes what
+  we investigate, how we investigate it, and what we find.
+subtitle: 311 Call Resolution Times and Neighborhood Change in Washington, D.C.
 bibliography: references.bib
 ---
 
