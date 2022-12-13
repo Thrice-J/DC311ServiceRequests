@@ -12,11 +12,11 @@ library(janitor)
 library(lme4)
 
 #Reading In From local machine (dataset can be found on GitHub)
-DC_gent_tracts <- read_csv("Census_Data_2012_2019_Eligible_Gentrified.csv")
+DC_gent_tracts <- read_csv("../Data/Census_Data_2012_2019_Eligible_Gentrified.csv")
 
 #Separting GEOID to get CENSUSTRACT variable for join
 DC_gent_tracts <- DC_gent_tracts %>% separate(GEOID, into = c('STATECOUNTY', 'CENSUSTRACT'), sep = 5) %>%
-  select(2:26)
+  dplyr::select(2:26)
 
 #Checking for NA's
 #map_df(DC_gent_tracts, ~ sum(is.na(.)))
@@ -24,7 +24,7 @@ DC_gent_tracts <- DC_gent_tracts %>% separate(GEOID, into = c('STATECOUNTY', 'CE
 #Filtering out NAs in 2012 data and only including eligible tracts and selecting variables needed
 DC_gent_tracts <- DC_gent_tracts %>% 
   filter(!is.na(MHI2012) & !is.na(MedianRent2012) & !is.na(MedianValue2012) & eligible == 1) %>%
-  select(1, 24, 25, 2:9)
+  dplyr::select(1, 24, 25, 2:9)
 
 #Scaling large variables for analysis
 DC_gent_tracts <- DC_gent_tracts %>%
@@ -54,6 +54,8 @@ plot(m.out.balanced, type = "ecdf", which.xs = ~MHI2012 + MedianValue2012 + Perc
 #get_matches(m.out.balanced)
 
 matched_data <- match.data(m.out.balanced)
+
+####Other Matching Attempts#####
 
 #Trying NN Method with caliper - 10 matched - distance great but unbalanced
 m.out1 <- matchit(gentrified ~ MHI2012 + MedianValue2012 + PercEduAttain2012, data = DC_gent_tracts, method = "nearest", ratio = 1, replace = F, distance = "glm", caliper = 0.2)
@@ -111,7 +113,7 @@ matched_data <- matched_data %>%
   dplyr::select(GEOID, matched) #selecting GEOID and matched column only
 
 #Read in data set from local machine - can be found on github
-DC_gent_map <- read_csv("Census_Data_2012_2019_Eligible_Gentrified.csv")
+DC_gent_map <- read_csv("../Data/Census_Data_2012_2019_Eligible_Gentrified.csv")
 
 #Changing GeoID to Character
 DC_gent_map <- DC_gent_map %>% mutate(GEOID = as.character(GEOID))
@@ -143,14 +145,14 @@ tm_shape(Map3) +
               textNA="Unmatched/Ineligble") +
   tm_layout(frame = T,
             legend.outside = F,
-            legend.text.size = 1.5) 
+            legend.width = 1)
 
 
 
-##################Matching DiD#######################################
+##########################Matching DiD#######################################
 
 #Read in data set from local machine - can be found on github
-DiD_Data <- read_csv("DC_311_Gentrified_Tracts_2012_2019_only.csv")
+DiD_Data <- read_csv("../Data/DC_311_Gentrified_Tracts_2012_2019_only.csv")
 
 #retreiving Matched Data
 matched_data <- match.data(m.out.balanced) 
@@ -160,18 +162,18 @@ matched_data <- matched_data %>%
   dplyr::select(CENSUSTRACT, matched) #selecting new column and tract for join
 
 #Joining
-DiD_Data <- DiD_Data %>% full_join(matched_data, by = "CENSUSTRACT")
+DiD_Data_Match <- DiD_Data %>% full_join(matched_data, by = "CENSUSTRACT")
 
-DiD_Data <- DiD_Data %>%
-  filter(!is.na(RESOLUTIONDAYS), #filtering out NA's
-         matched == 1, #Only included matched data
+DiD_Data_Match <- DiD_Data_Match %>%
+  filter(matched == 1, #Only included matched data
+         !is.na(RESOLUTIONDAYS), #filtering out NA's
          RESOLUTIONDAYS <= 31) #filtering for less than 31 days
 
 selected_calls <- c("Bulk Collection", "Trash Collection - Missed", "Parking Enforcement", "Pothole", "Sanitation Enforcement", "Illegal Dumping", "Residential Parking Permit Violation", "Streetlight Repair Investigation", "Tree Inspection", "Abandoned Vehicle - On Public Property", "Recycling Collection - Missed", "Alley Cleaning", "Graffiti Removal", "Street Cleaning")
 
-DiD_Data <- DiD_Data %>% #filtering on selected calls
-  filter(SERVICECODEDESCRIPTION %in% selected_calls1) %>%
-  dplyr::select(YEAR, eligible, gentrified, matched, SERVICECODEDESCRIPTION, RESOLUTIONDAYS, ADDDATE, RESOLUTIONDATE)
+DiD_Data_Match <- DiD_Data_Match %>% #filtering on selected calls
+  filter(SERVICECODEDESCRIPTION %in% selected_calls) %>%
+  dplyr::select(YEAR, eligible, gentrified, matched, SERVICECODEDESCRIPTION, ORGANIZATIONACRONYM, RESOLUTIONDAYS, ADDDATE, RESOLUTIONDATE)
 
 
 #Looking at matched data
@@ -180,7 +182,7 @@ DiD_Data <- DiD_Data %>% #filtering on selected calls
 #            n = n()))
 
 #Creating variables for DiD
-DiD_Data <- DiD_Data %>%
+DiD_Data_Match <- DiD_Data_Match %>%
   mutate(Treatment = gentrified,
          Post = case_when(YEAR == 2012 ~ 0,
                           YEAR == 2019 ~ 1))
@@ -189,7 +191,7 @@ DiD_Data <- DiD_Data %>%
 #map_df(DiD_Data, ~ sum(is.na(.)))
 
 #Running DiD regression
-reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  DiD_Data)
+reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  DiD_Data_Match)
 summary(reg)
 
 
@@ -201,7 +203,7 @@ b <- coef(reg)
 #b
 
 #Creating DiD Coefficients Data Frame
-DIDbasicdf <- data.frame(year = rep(c(2012, 2019), each = 3), 
+DIDmatchingdf <- data.frame(year = rep(c(2012, 2019), each = 3), 
                          group = rep(c("Gentrified", "Eligible-Not-Gentrified", "Counterfactual"), 2),
                          resolutiondays = round(c( (b[1]+b[2]), (b[1]), (b[1]+b[2]), 
                                                    (b[1] + b[2] + b[3] + b[4]), (b[1] + b[3]), (b[1]+b[2]+b[3])),2),
@@ -209,22 +211,135 @@ DIDbasicdf <- data.frame(year = rep(c(2012, 2019), each = 3),
 
 
 #Creating DiD graph
-DIDbasicdf$linetype = DIDbasicdf$group == "Counterfactual"
-ggplot(DIDbasicdf) +
+DIDmatchingdf$linetype = DIDmatchingdf$group == "Counterfactual"
+ggplot(DIDmatchingdf) +
   geom_point(mapping = aes(x = year, y = resolutiondays, color = factor(colorgroup)), size = 5, pch = 1, show.legend = FALSE) +
   geom_line(mapping = aes(x = year, y = resolutiondays, color = group, lty = linetype), show.legend = FALSE) +
   geom_text(mapping = aes(x = year, y = resolutiondays, label = resolutiondays), size =2) +
-  geom_text(aes(x = 2020.1, y = resolutiondays, label = group, color = group), data = filter(DIDbasicdf, year == 2019), size = 2, show.legend = FALSE) +
+  geom_text(aes(x = 2020.1, y = resolutiondays, label = group, color = group), data = filter(DIDmatchingdf, year == 2019), size = 1.8, show.legend = FALSE) +
   scale_color_manual(values = c("light blue", "salmon", "gray", "gray", "salmon", "light blue"))+
   scale_x_continuous(breaks = c(2012, 2019), limits = c(2012, 2021)) +
   theme_minimal() +
   labs(title = "Difference-in-difference (matching)", y = "Average resolution time (in days)", x = "Year")
 
 
-#Controlling for Service Code Type
-reg2 = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post + factor(SERVICECODEDESCRIPTION),  DiD_Data)
+
+##################Matching DiD -  Controlling for Call Type#####################
+
+
+
+#Matching and Controlling for Call Type
+reg2 = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post + factor(SERVICECODEDESCRIPTION), 
+          DiD_Data_Match)
 summary(reg2)
 
-#Looking at multilevel model
-reg3 = lmer(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post + (1|SERVICECODEDESCRIPTION), data = DiD_Data)
-summary(reg3)
+#confidence interval
+confint(reg2)
+
+#Getting Regression Coefficients
+b1 <- coef(reg2)
+#b
+
+#Creating DiD Coefficients Data Frame
+DIDmatchingdf2 <- data.frame(year = rep(c(2012, 2019), each = 3), 
+                            group = rep(c("Gentrified", "Eligible-Not-Gentrified", "Counterfactual"), 2),
+                            resolutiondays = round(c( (b1[1]+b1[2]), (b1[1]), (b1[1]+b1[2]), 
+                                                      (b1[1] + b1[2] + b1[3] + b1[17]), (b1[1] + b1[3]),
+                                                      (b1[1]+b1[2]+b1[3])),2),
+                            colorgroup = c(1, 2, 1, 1, 2, 3))
+
+
+#Creating DiD graph
+DIDmatchingdf2$linetype = DIDmatchingdf2$group == "Counterfactual"
+ggplot(DIDmatchingdf2) +
+  geom_point(mapping = aes(x = year, y = resolutiondays, color = factor(colorgroup)), size = 5, pch = 1, show.legend = FALSE) +
+  geom_line(mapping = aes(x = year, y = resolutiondays, color = group, lty = linetype), show.legend = FALSE) +
+  geom_text(mapping = aes(x = year, y = resolutiondays, label = resolutiondays), size =2) +
+  geom_text(aes(x = 2020.1, y = resolutiondays, label = group, color = group), data = filter(DIDmatchingdf2, year == 2019), size = 1.8, show.legend = FALSE) +
+  scale_color_manual(values = c("light blue", "salmon", "gray", "gray", "salmon", "light blue"))+
+  scale_x_continuous(breaks = c(2012, 2019), limits = c(2012, 2021)) +
+  theme_minimal() +
+  labs(title = "Difference-in-difference (matching - controlling for call type)", y = "Average resolution time (in days)", x = "Year")
+
+
+##################Matching DiD -  Individual Call Types#####################
+
+#Looking at Bulk Collection with Matched Tracks only
+DiD_Data_Bulkmatch <- DiD_Data_Match %>%
+  filter(SERVICECODEDESCRIPTION == "Bulk Collection")
+
+#Running DiD regression
+reg_bulkmatch = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  DiD_Data_Bulkmatch)
+summary(reg_bulkmatch)
+
+
+#confidence interval
+confint(reg_bulkmatch)
+
+#Getting Regression Coefficients
+bbm <- coef(reg_bulkmatch)
+#b
+
+#Creating DiD Coefficients Data Frame
+DIDbulkmatchdf <- data.frame(year = rep(c(2012, 2019), each = 3), 
+                            group = rep(c("Gentrified", "Eligible-Not-Gentrified", "Counterfactual"), 2),
+                            resolutiondays = round(c( (bbm[1]+bbm[2]), (bbm[1]), (bbm[1]+bbm[2]), 
+                                                      (bbm[1] + bbm[2] + bbm[3] + bbm[4]), (bbm[1] + bbm[3]),
+                                                      (bbm[1]+bbm[2]+bbm[3])),2),
+                            colorgroup = c(1, 2, 1, 1, 2, 3))
+
+
+#Creating DiD graph
+DIDbulkmatchdf$linetype = DIDbulkmatchdf$group == "Counterfactual"
+ggplot(DIDbulkmatchdf) +
+  geom_point(mapping = aes(x = year, y = resolutiondays, color = factor(colorgroup)), size = 5, pch = 1, show.legend = FALSE) +
+  geom_line(mapping = aes(x = year, y = resolutiondays, color = group, lty = linetype), show.legend = FALSE) +
+  geom_text(mapping = aes(x = year, y = resolutiondays, label = resolutiondays), size =2) +
+  geom_text(aes(x = 2020.1, y = resolutiondays, label = group, color = group), data = filter(DIDbulkmatchdf, year == 2019), size = 1.8, show.legend = FALSE) +
+  scale_color_manual(values = c("light blue", "salmon", "gray", "gray", "salmon", "light blue"))+
+  scale_x_continuous(breaks = c(2012, 2019), limits = c(2012, 2021)) +
+  theme_minimal() +
+  labs(title = "Difference-in-difference (matching - bulk collection)", y = "Average resolution time (in days)", x = "Year")
+
+
+
+#Looking at Parking Enforcement with Matched Tracks only
+DiD_Data_Parkmatch <- DiD_Data_Match %>%
+  filter(SERVICECODEDESCRIPTION == "Parking Enforcement")
+
+#Running DiD regression
+reg_parkmatch = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  DiD_Data_Parkmatch)
+summary(reg_parkmatch)
+
+
+#confidence interval
+confint(reg_parkmatch)
+
+#Getting Regression Coefficients
+bpm <- coef(reg_parkmatch)
+#b
+
+#Creating DiD Coefficients Data Frame
+DIDparkmatchdf <- data.frame(year = rep(c(2012, 2019), each = 3), 
+                             group = rep(c("Gentrified", "Eligible-Not-Gentrified", "Counterfactual"), 2),
+                             resolutiondays = round(c( (bpm[1]+bpm[2]), (bpm[1]), (bpm[1]+bpm[2]), 
+                                                       (bpm[1] + bpm[2] + bpm[3] + bpm[4]), (bpm[1] + bpm[3]),
+                                                       (bpm[1]+bpm[2]+bpm[3])),2),
+                             colorgroup = c(1, 2, 1, 1, 2, 3))
+
+
+#Creating DiD graph
+DIDparkmatchdf$linetype = DIDparkmatchdf$group == "Counterfactual"
+ggplot(DIDparkmatchdf) +
+  geom_point(mapping = aes(x = year, y = resolutiondays, color = factor(colorgroup)), size = 5, pch = 1, show.legend = FALSE) +
+  geom_line(mapping = aes(x = year, y = resolutiondays, color = group, lty = linetype), show.legend = FALSE) +
+  geom_text(mapping = aes(x = year, y = resolutiondays, label = resolutiondays), size =2) +
+  geom_text(aes(x = 2020.1, y = resolutiondays, label = group, color = group), data = filter(DIDparkmatchdf, year == 2019), size = 1.8, show.legend = FALSE) +
+  scale_color_manual(values = c("light blue", "salmon", "gray", "gray", "salmon", "light blue"))+
+  scale_x_continuous(breaks = c(2012, 2019), limits = c(2012, 2021)) +
+  theme_minimal() +
+  labs(title = "Difference-in-difference (matching - parking enforcement)", y = "Average resolution time (in days)", x = "Year")
+
+
+
+
