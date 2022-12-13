@@ -9,7 +9,6 @@ library(tidycensus)
 library(tmap)
 library(tmaptools)
 library(janitor)
-library(lme4)
 
 #Reading In From local machine (dataset can be found on GitHub)
 DC_gent_tracts <- read_csv("../Data/Census_Data_2012_2019_Eligible_Gentrified.csv")
@@ -53,7 +52,32 @@ plot(m.out.balanced, type = "ecdf", which.xs = ~MHI2012 + MedianValue2012 + Perc
 
 #get_matches(m.out.balanced)
 
+#Getting matched census tracts
 matched_data <- match.data(m.out.balanced)
+
+matched_data <- matched_data %>%
+  mutate(matched = eligible, #Creating Matched Data Column
+         GEOID = paste0("11001", CENSUSTRACT)) %>% #Creating GEOID key for join
+  dplyr::select(GEOID, matched) #selecting GEOID and matched column only
+
+#Read in data set from local machine - can be found on github
+DC_gent_data <- read_csv("../Data/Census_Data_2012_2019_Eligible_Gentrified.csv")
+
+#Changing GeoID to Character
+DC_gent_data <- DC_gent_data %>% mutate(GEOID = as.character(GEOID))
+
+#Joining
+DC_matched_data <- DC_gent_data %>% full_join(matched_data, by = "GEOID")
+
+#Tidying matched variable
+DC_matched_data <- DC_matched_data %>% mutate(matched = case_when(matched == 1 ~ 1,
+                                            T ~ 0))
+
+#Ordering variables
+DC_matched_data <- DC_matched_data %>% dplyr::select(1, 24:26, 2:23)
+
+#Writing so matched data set is now on github
+write_csv(DC_matched_data, "../Data/Census_Data_2012_2019_Matched.csv")
 
 ####Other Matching Attempts#####
 
@@ -104,29 +128,18 @@ plot(s, var.order = "matched", abs = FALSE)
 
 ##########################Matched Data Map######################################
 
-#Getting matched data from above
-matched_data <- match.data(m.out.balanced)
-
-matched_data <- matched_data %>%
-  mutate(matched = eligible, #Creating Matched Data Column
-         GEOID = paste0("11001", CENSUSTRACT)) %>% #Creating GEOID key for join
-  dplyr::select(GEOID, matched) #selecting GEOID and matched column only
-
 #Read in data set from local machine - can be found on github
-DC_gent_map <- read_csv("../Data/Census_Data_2012_2019_Eligible_Gentrified.csv")
+DC_matched_tracts <- read_csv("../Data/Census_Data_2012_2019_Matched.csv")
 
 #Changing GeoID to Character
-DC_gent_map <- DC_gent_map %>% mutate(GEOID = as.character(GEOID))
-
-#Joining
-DC_gent_map <- DC_gent_map %>% full_join(matched_data, by = "GEOID")
+DC_matched_tracts <- DC_matched_tracts %>% mutate(GEOID = as.character(GEOID))
 
 #Getting geometry for map
 DC_geometry <- get_acs(state = "DC", geography = "tract",  variables = "B01001_001", year = 2019, geometry = TRUE)
 
 #Joining with data by GEOID
 DC_geometry <- DC_geometry %>%
-  full_join(DC_gent_map, by = "GEOID")
+  full_join(DC_matched_tracts, by = "GEOID")
 
 #Selecting Relevant Variables
 DC_geometry <- DC_geometry %>% 
@@ -154,15 +167,16 @@ tm_shape(Map3) +
 #Read in data set from local machine - can be found on github
 DiD_Data <- read_csv("../Data/DC_311_Gentrified_Tracts_2012_2019_only.csv")
 
-#retreiving Matched Data
-matched_data <- match.data(m.out.balanced) 
+#Read in data set from local machine - can be found on github
+DC_matched <- read_csv("../Data/Census_Data_2012_2019_Matched.csv")
 
-matched_data <- matched_data %>%
-  mutate(matched = eligible) %>% #creating matched column
+DC_matched <- DC_matched %>% separate(GEOID, into = c('STATECOUNTY', 'CENSUSTRACT'), sep = 5) %>%
   dplyr::select(CENSUSTRACT, matched) #selecting new column and tract for join
 
 #Joining
-DiD_Data_Match <- DiD_Data %>% full_join(matched_data, by = "CENSUSTRACT")
+DiD_Data_Match <- DiD_Data %>% full_join(DC_matched, by = "CENSUSTRACT") %>%
+  dplyr::select(1:4, 42, 5:41) #arranging columns
+
 
 DiD_Data_Match <- DiD_Data_Match %>%
   filter(matched == 1, #Only included matched data
@@ -225,7 +239,6 @@ ggplot(DIDmatchingdf) +
 
 
 ##################Matching DiD -  Controlling for Call Type#####################
-
 
 
 #Matching and Controlling for Call Type
