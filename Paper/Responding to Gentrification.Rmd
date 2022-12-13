@@ -29,11 +29,39 @@ library(janitor)
 library(lubridate)
 ```
 
-```{r echo=FALSE, message=FALSE}
+```{r message=FALSE, warning=FALSE, include=FALSE}
 #reading in our data (can be found on github)
 calls_2012_2019 <- read_csv("../Data/DC_311_Gentrified_Tracts_2012_2019_only.csv")
 
-tracts_2012_2019 <- read_csv("../Data/Census_Data_2012_2019_Eligible_Gentrified.csv")
+tracts_2012_2019 <- read_csv("../Data/Census_Data_2012_2019_Matched.csv")
+
+#Creating Census Tract Variable
+tracts_2012_2019 <- tracts_2012_2019 %>% separate(GEOID, into = c('STATECOUNTY', 'CENSUSTRACT'), 
+                                                  sep = 5) %>%
+  dplyr::select(CENSUSTRACT, matched) #selecting new column and tract for join
+
+#Joining
+DiD_Data <- calls_2012_2019 %>% full_join(tracts_2012_2019, by = "CENSUSTRACT") %>%
+  dplyr::select(1:4, 42, 5:41) #arranging columns
+
+#Filtering for general DiD Data
+DiD_Data <- DiD_Data %>%
+  filter(eligible == 1, #Only included matched data
+         !is.na(RESOLUTIONDAYS), #filtering out NA's
+         RESOLUTIONDAYS <= 31) #filtering for less than 31 days
+
+#Selected Calls Vector
+selected_calls <- c("Bulk Collection", "Trash Collection - Missed", "Parking Enforcement", "Pothole", "Sanitation Enforcement", "Illegal Dumping", "Residential Parking Permit Violation", "Streetlight Repair Investigation", "Tree Inspection", "Abandoned Vehicle - On Public Property", "Recycling Collection - Missed", "Alley Cleaning", "Graffiti Removal", "Street Cleaning")
+
+DiD_Data <- DiD_Data %>% #filtering on selected calls
+  filter(SERVICECODEDESCRIPTION %in% selected_calls) %>%
+  dplyr::select(YEAR, eligible, gentrified, matched, SERVICECODEDESCRIPTION, ORGANIZATIONACRONYM, RESOLUTIONDAYS, ADDDATE, RESOLUTIONDATE)
+
+DiD_Data <- DiD_Data %>%
+  mutate(Treatment = gentrified,
+         Post = case_when(YEAR == 2012 ~ 0,
+                          YEAR == 2019 ~ 1),
+         SERVICECODEDESCRIPTION = as.factor(SERVICECODEDESCRIPTION))
 ```
 
 # Introduction
@@ -68,37 +96,99 @@ We can generate our plots with code or We can attach our plots like so: \newline
 
 Note that this section may be integrated into Section \ref{section:data}, if joining the two improves the overall presentation.
 
-Our results for the `cars` data include estimating the linear model
+Our results for the `cars` data include estimating the linear model  
 
 $$\text{Distance}_i = \beta_0 + \beta_1 (\text{Speed}_i) + \epsilon_i.$$
 
-```{r echo=FALSE}
-# Estimate a linear model:
-lm_out <- lm(dist ~ speed, data = cars)
-# Extract the coefficient on speed:
-cars_speed_coef <- coef(lm_out)["speed"]
-```
-
-Below we show the model estimates. The first table uses `xtable()`, the second uses `stargazer()`.
+Basic DiD Summary Table  \newline 
 
 ```{r echo=FALSE, message=FALSE, results='asis'}
-# We can print regression tables with xtable or stargazer:
-regr_table <- xtable::xtable(lm_out,
-                             digits = 2,
+basic_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  data = DiD_Data)
+basic_reg_table <- xtable::xtable(basic_reg,
+                             digits = 3,
+                             caption = "Our Informative Caption",
+                             float = F)
+print(basic_reg_table, comment = FALSE)
+
+```
+
+DiD Controlling for call type summary table  \newline   
+
+```{r echo=FALSE, message=FALSE, results='asis'}
+control_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post + SERVICECODEDESCRIPTION,
+                 data = DiD_Data)
+control_reg_table <- xtable::xtable(control_reg,
+                             digits = 3,
+                             caption = "Our Informative Caption", 
+                             float = F)
+print(control_reg_table, comment = FALSE)
+```
+
+Basic DiD with Matching table  \newline 
+
+```{r echo=FALSE, message=FALSE, results='asis'}
+DiD_Data_Match <- DiD_Data %>%
+  filter(matched == 1)
+
+basic_match_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  DiD_Data_Match)
+basic_match_reg_table <- xtable::xtable(basic_match_reg,
+                             digits = 3,
                              caption = "Our Informative Caption")
-print(regr_table, comment = FALSE)
+print(basic_match_reg_table, comment = FALSE)
 ```
+
+Matching DiD while controlling for call type  \newline  
+
+```{r echo=FALSE, message=FALSE, results='asis'}
+control_match_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post + SERVICECODEDESCRIPTION,
+                       DiD_Data_Match)
+control_match_reg_table <- xtable::xtable(control_match_reg,
+                             digits = 3,
+                             caption = "Our Informative Caption")
+print(control_match_reg_table, comment = FALSE)
+```
+
+Matching DiD looking at Bulk Collection only   \newline 
+
+```{r echo=FALSE, message=FALSE, results='asis'}
+DiD_Data_Bulkmatch <- DiD_Data_Match %>%
+  filter(SERVICECODEDESCRIPTION == "Bulk Collection")
+
+#Running DiD regression
+bulk_match_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  DiD_Data_Bulkmatch)
+
+bulk_match_reg_table <- xtable::xtable(bulk_match_reg,
+                             digits = 3,
+                             caption = "Our Informative Caption")
+print(bulk_match_reg_table, comment = FALSE)
+```
+
+Matching DiD looking at Parking Enforcement only   \newline 
+
+```{r echo=FALSE, message=FALSE, results='asis'}
+DiD_Data_Parkmatch <- DiD_Data_Match %>%
+  filter(SERVICECODEDESCRIPTION == "Parking Enforcement")
+
+#Running DiD regression
+park_match_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  DiD_Data_Parkmatch)
+
+park_match_reg_table <- xtable::xtable(park_match_reg,
+                             digits = 3,
+                             caption = "Our Informative Caption")
+print(park_match_reg_table, comment = FALSE)
+```
+
+Below we show the model estimates. The table uses `stargazer()` as an alternative.  \newline 
 
 ```{r echo=FALSE, message=FALSE, results='asis'}
 # We can print regression tables with xtable or stargazer:
-stargazer::stargazer(lm_out, 
+stargazer::stargazer(basic_reg, 
                      title = "Our Informative Title",
                      dep.var.caption = "Outcome",
                      digits = 2,
                      header = FALSE)
 ```
 
-Using the `cars` data, we find that each unit of speed is associated with `r round(cars_speed_coef, 1)` more units of distance.
 
 # Discussion
 
