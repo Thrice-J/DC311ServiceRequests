@@ -16,13 +16,7 @@ bibliography: references.bib
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 library(knitr)
 library(tidyverse)
-library(MatchIt)
-library(Matching)
-library(tidycensus)
-library(tmap)
-library(tmaptools)
-library(janitor)
-library(lubridate)
+library(broom)
 ```
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
@@ -40,18 +34,20 @@ tracts_2012_2019 <- tracts_2012_2019 %>% separate(GEOID, into = c('STATECOUNTY',
 DiD_Data <- calls_2012_2019 %>% full_join(tracts_2012_2019, by = "CENSUSTRACT") %>%
   dplyr::select(1:4, 42, 5:41) #arranging columns
 
-#Filtering for general DiD Data
-DiD_Data <- DiD_Data %>%
-  filter(eligible == 1, #Only included matched data
-         !is.na(RESOLUTIONDAYS), #filtering out NA's
-         RESOLUTIONDAYS <= 31) #filtering for less than 31 days
-
 #Selected Calls Vector
-selected_calls <- c("Bulk Collection", "Trash Collection - Missed", "Parking Enforcement", "Pothole", "Sanitation Enforcement", "Illegal Dumping", "Residential Parking Permit Violation", "Streetlight Repair Investigation", "Tree Inspection", "Abandoned Vehicle - On Public Property", "Recycling Collection - Missed", "Alley Cleaning", "Graffiti Removal", "Street Cleaning")
+selected_calls <- c("Bulk Collection", "Trash Collection - Missed", "Parking Enforcement", "Pothole", "Sanitation Enforcement", "Illegal Dumping", "Residential Parking Permit Violation", "Streetlight Repair Investigation", "Tree Inspection", "Abandoned Vehicle - On Public Property", "Recycling Collection - Missed", "Alley Cleaning", "Graffiti Removal", "Street Cleaning", "Sidewalk Repair")
 
-DiD_Data <- DiD_Data %>% #filtering on selected calls
-  filter(SERVICECODEDESCRIPTION %in% selected_calls) %>%
+DiD_Data <- DiD_Data %>% 
+  filter(SERVICECODEDESCRIPTION %in% selected_calls, #filtering on selected calls
+         eligible == 1, #Only included eligible tracts
+         !is.na(RESOLUTIONDAYS)) %>% #filtering out NA's %>%
   dplyr::select(YEAR, eligible, gentrified, matched, SERVICECODEDESCRIPTION, ORGANIZATIONACRONYM, RESOLUTIONDAYS, ADDDATE, RESOLUTIONDATE)
+
+DiD_Data <- DiD_Data %>%
+  filter(RESOLUTIONDAYS <= 31, #filtering for less than 31 days
+         !SERVICECODEDESCRIPTION == "Sidewalk Repair") #removing sidewalk repair 
+                                                       #only 3 instances after 31 day filter
+
 
 DiD_Data <- DiD_Data %>%
   mutate(Treatment = gentrified,
@@ -59,6 +55,7 @@ DiD_Data <- DiD_Data %>%
                           YEAR == 2019 ~ 1),
          SERVICECODEDESCRIPTION = as.factor(SERVICECODEDESCRIPTION))
 ```
+
 
 # Introduction
 
@@ -96,82 +93,31 @@ Our results for the `cars` data include estimating the linear model
 
 $$\text{Distance}_i = \beta_0 + \beta_1 (\text{Speed}_i) + \epsilon_i.$$
 
-Basic DiD Summary Table  \newline 
 
-```{r echo=FALSE, message=FALSE, results='asis'}
-basic_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  data = DiD_Data)
-basic_reg_table <- xtable::xtable(basic_reg,
-                             digits = 3,
-                             caption = "Our Informative Caption",
-                             float = F)
-print(basic_reg_table, comment = FALSE)
+```{r message=FALSE, warning=FALSE, include=FALSE}
+basic_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post, data = DiD_Data)
 
-```
-
-DiD Controlling for call type summary table  \newline   
-
-```{r echo=FALSE, message=FALSE, results='asis'}
 control_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post + SERVICECODEDESCRIPTION,
                  data = DiD_Data)
-control_reg_table <- xtable::xtable(control_reg,
-                             digits = 3,
-                             caption = "Our Informative Caption", 
-                             float = F)
-print(control_reg_table, comment = FALSE)
-```
 
-Basic DiD with Matching table  \newline 
-
-```{r echo=FALSE, message=FALSE, results='asis'}
 DiD_Data_Match <- DiD_Data %>%
   filter(matched == 1)
 
 basic_match_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  DiD_Data_Match)
-basic_match_reg_table <- xtable::xtable(basic_match_reg,
-                             digits = 3,
-                             caption = "Our Informative Caption")
-print(basic_match_reg_table, comment = FALSE)
-```
 
-Matching DiD while controlling for call type  \newline  
-
-```{r echo=FALSE, message=FALSE, results='asis'}
 control_match_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post + SERVICECODEDESCRIPTION,
                        DiD_Data_Match)
-control_match_reg_table <- xtable::xtable(control_match_reg,
-                             digits = 3,
-                             caption = "Our Informative Caption")
-print(control_match_reg_table, comment = FALSE)
-```
 
-Matching DiD looking at Bulk Collection only   \newline 
-
-```{r echo=FALSE, message=FALSE, results='asis'}
 DiD_Data_Bulkmatch <- DiD_Data_Match %>%
   filter(SERVICECODEDESCRIPTION == "Bulk Collection")
 
-#Running DiD regression
 bulk_match_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  DiD_Data_Bulkmatch)
 
-bulk_match_reg_table <- xtable::xtable(bulk_match_reg,
-                             digits = 3,
-                             caption = "Our Informative Caption")
-print(bulk_match_reg_table, comment = FALSE)
-```
-
-Matching DiD looking at Parking Enforcement only   \newline 
-
-```{r echo=FALSE, message=FALSE, results='asis'}
 DiD_Data_Parkmatch <- DiD_Data_Match %>%
   filter(SERVICECODEDESCRIPTION == "Parking Enforcement")
 
 #Running DiD regression
 park_match_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  DiD_Data_Parkmatch)
-
-park_match_reg_table <- xtable::xtable(park_match_reg,
-                             digits = 3,
-                             caption = "Our Informative Caption")
-print(park_match_reg_table, comment = FALSE)
 ```
 
 # Discussion
@@ -181,3 +127,66 @@ We remind the reader what this paper was about, why it was important, and what w
 \newpage
 
 # References
+
+<div id="refs"></div>
+
+\newpage
+
+# Appendix
+
+**Table 1 - Difference-in-difference models without matching**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+stargazer::stargazer(basic_reg, control_reg, 
+                     float = F,
+                     column.labels = c("Basic", "Controlling for Call Type"),
+                     colnames = FALSE,
+                     model.numbers = FALSE,
+                     dep.var.caption = " ",
+                     dep.var.labels = "Resolution Days",
+                     covariate.labels = c("Intercept", "Treatment", "Post", "Alley Cleaning", "Bulk Collection", "Graffiti Removal", "Illegal Dumping", "Parking Enforcement", "Pothole", "Recycling Collection - Missed", "Residential Parking Permit Violation", "Sanitation Enforcement", "Street Cleaning", "Streetlight Repair Investigation", "Trash Collection - Missed", "Tree Inspection", "Treatment:Post"),
+                     font.size = "footnotesize",
+                     intercept.top = T,
+                     intercept.bottom = F,
+                     keep.stat = "n",
+                     header = F)
+```
+
+\newpage 
+
+**Table 2 - Difference-in-difference models with matching**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+stargazer::stargazer(basic_match_reg, control_match_reg, 
+                     float = F,
+                     column.labels = c("Basic", "Controlling for Call Type"),
+                     colnames = FALSE,
+                     model.numbers = FALSE,
+                     dep.var.caption = " ",
+                     dep.var.labels = "Resolution Days",
+                     covariate.labels = c("Intercept", "Treatment", "Post", "Alley Cleaning", "Bulk Collection", "Graffiti Removal", "Illegal Dumping", "Parking Enforcement", "Pothole", "Recycling Collection - Missed", "Residential Parking Permit Violation", "Sanitation Enforcement", "Street Cleaning", "Streetlight Repair Investigation", "Trash Collection - Missed", "Tree Inspection", "Treatment:Post"),
+                     font.size = "footnotesize",
+                     intercept.top = T,
+                     intercept.bottom = F,
+                     keep.stat = "n",
+                     header = F)
+```
+
+\newpage
+
+**Table 3 - Difference-in-difference models for individual call types with matching**
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, results='asis'}
+stargazer::stargazer(bulk_match_reg, park_match_reg, 
+                     float = F,
+                     column.labels = c("Bulk Collection", "Parking Enforcement"),
+                     colnames = FALSE,
+                     model.numbers = FALSE,
+                     dep.var.caption = " ",
+                     dep.var.labels = "Resolution Days",
+                     covariate.labels = c("Intercept", "Treatment", "Post", "Treatment:Post"),
+                     intercept.top = T,
+                     intercept.bottom = F,
+                     keep.stat = "n",
+                     header = F)
+```
