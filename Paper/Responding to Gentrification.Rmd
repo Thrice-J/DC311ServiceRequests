@@ -102,7 +102,7 @@ $$\text{Distance}_i = \beta_0 + \beta_1 (\text{Speed}_i) + \epsilon_i.$$
 
 Basic DiD Summary Table  \newline 
 
-```{r echo=FALSE, message=FALSE, results='asis'}
+```{r echo=FALSE, message=FALSE, results='asis', float = "none"}
 basic_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post,  data = DiD_Data)
 basic_reg_table <- xtable::xtable(basic_reg,
                              digits = 3,
@@ -114,7 +114,7 @@ print(basic_reg_table, comment = FALSE)
 
 DiD Controlling for call type summary table  \newline   
 
-```{r echo=FALSE, message=FALSE, results='asis'}
+```{r echo=FALSE, message=FALSE, results='asis', float = "none"}
 control_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post + SERVICECODEDESCRIPTION,
                  data = DiD_Data)
 control_reg_table <- xtable::xtable(control_reg,
@@ -126,7 +126,7 @@ print(control_reg_table, comment = FALSE)
 
 Basic DiD with Matching table  \newline 
 
-```{r echo=FALSE, message=FALSE, results='asis'}
+```{r echo=FALSE, message=FALSE, results='asis', float = "none"}
 DiD_Data_Match <- DiD_Data %>%
   filter(matched == 1)
 
@@ -139,7 +139,7 @@ print(basic_match_reg_table, comment = FALSE)
 
 Matching DiD while controlling for call type  \newline  
 
-```{r echo=FALSE, message=FALSE, results='asis'}
+```{r echo=FALSE, message=FALSE, results='asis', float = "none"}
 control_match_reg = lm(RESOLUTIONDAYS ~ Treatment + Post + Treatment*Post + SERVICECODEDESCRIPTION,
                        DiD_Data_Match)
 control_match_reg_table <- xtable::xtable(control_match_reg,
@@ -150,7 +150,7 @@ print(control_match_reg_table, comment = FALSE)
 
 Matching DiD looking at Bulk Collection only   \newline 
 
-```{r echo=FALSE, message=FALSE, results='asis'}
+```{r echo=FALSE, message=FALSE, results='asis', float = "none"}
 DiD_Data_Bulkmatch <- DiD_Data_Match %>%
   filter(SERVICECODEDESCRIPTION == "Bulk Collection")
 
@@ -165,7 +165,7 @@ print(bulk_match_reg_table, comment = FALSE)
 
 Matching DiD looking at Parking Enforcement only   \newline 
 
-```{r echo=FALSE, message=FALSE, results='asis'}
+```{r echo=FALSE, message=FALSE, results='asis', float = "none"}
 DiD_Data_Parkmatch <- DiD_Data_Match %>%
   filter(SERVICECODEDESCRIPTION == "Parking Enforcement")
 
@@ -180,7 +180,7 @@ print(park_match_reg_table, comment = FALSE)
 
 Below we show the model estimates. The table uses `stargazer()` as an alternative.  \newline 
 
-```{r echo=FALSE, message=FALSE, results='asis'}
+```{r echo=FALSE, message=FALSE, results='asis', float = "none"}
 # We can print regression tables with xtable or stargazer:
 stargazer::stargazer(basic_reg, 
                      title = "Our Informative Title",
