@@ -1,4 +1,7 @@
 library(tidyverse)
+
+#File stored on shared Google Drive (too big for GitHub)
+
 census_data <- read_csv("DC_Census_2010to2020.csv")
 
 census_data_2012 <- census_data %>%
